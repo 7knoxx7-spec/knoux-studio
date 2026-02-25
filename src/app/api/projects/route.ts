@@ -1,27 +1,50 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+const createProjectSchema = z.object({
+  title: z.string().trim().min(1, 'عنوان المشروع مطلوب').max(200, 'العنوان طويل جداً'),
+  description: z.string().max(1000, 'الوصف طويل جداً').optional().nullable(),
+  type: z.string().trim().min(1, 'نوع المشروع مطلوب').max(50, 'نوع المشروع غير صالح'),
+  data: z.string().min(1, 'بيانات المشروع مطلوبة'),
+});
+
+const updateProjectSchema = z.object({
+  id: z.string().trim().min(1, 'معرف المشروع مطلوب'),
+  title: z.string().trim().min(1).max(200).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  data: z.string().min(1).optional(),
+  isPublic: z.boolean().optional(),
+});
+
+async function getCurrentUserId() {
+  const session = await getServerSession(authOptions);
+  const email = session?.user?.email;
+
+  if (!email) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  return user?.id ?? null;
+}
+
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const shareId = searchParams.get('share');
 
     if (shareId) {
-      const project = await prisma.project.findUnique({
-        where: { shareId },
+      const project = await prisma.project.findFirst({
+        where: { shareId, isPublic: true },
         include: { user: { select: { name: true, image: true } } },
       });
 
       if (!project) {
-        return NextResponse.json({ error: 'المشروع غير موجود' }, { status: 404 });
+        return NextResponse.json({ error: 'رابط المشاركة غير صالح أو غير متاح' }, { status: 404 });
       }
 
       await prisma.share.updateMany({
@@ -32,17 +55,14 @@ export async function GET(request: Request) {
       return NextResponse.json(project);
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 });
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
     const projects = await prisma.project.findMany({
       where: {
-        userId: user.id,
+        userId,
         ...(type ? { type } : {}),
       },
       orderBy: { updatedAt: 'desc' },
@@ -56,32 +76,27 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const userId = await getCurrentUserId();
+    if (!userId) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
-    const { title, description, type, data } = await request.json();
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 });
+    const parsed = createProjectSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'بيانات غير صالحة' }, { status: 400 });
     }
 
     const project = await prisma.project.create({
       data: {
-        title,
-        description,
-        type,
-        data,
-        userId: user.id,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        type: parsed.data.type,
+        data: parsed.data.data,
+        userId,
       },
     });
 
-    return NextResponse.json(project);
+    return NextResponse.json(project, { status: 201 });
   } catch {
     return NextResponse.json({ error: 'خطأ في إنشاء المشروع' }, { status: 500 });
   }
@@ -89,23 +104,18 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const userId = await getCurrentUserId();
+    if (!userId) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
-    const { id, title, description, data, isPublic } = await request.json();
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 });
+    const parsed = updateProjectSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'بيانات غير صالحة' }, { status: 400 });
     }
 
     const project = await prisma.project.findFirst({
-      where: { id, userId: user.id },
+      where: { id: parsed.data.id, userId },
     });
 
     if (!project) {
@@ -113,12 +123,12 @@ export async function PUT(request: Request) {
     }
 
     const updated = await prisma.project.update({
-      where: { id },
+      where: { id: parsed.data.id },
       data: {
-        title,
-        description,
-        data,
-        isPublic,
+        ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
+        ...(parsed.data.description !== undefined ? { description: parsed.data.description } : {}),
+        ...(parsed.data.data !== undefined ? { data: parsed.data.data } : {}),
+        ...(parsed.data.isPublic !== undefined ? { isPublic: parsed.data.isPublic } : {}),
       },
     });
 
@@ -130,8 +140,8 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const userId = await getCurrentUserId();
+    if (!userId) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
     }
 
@@ -142,16 +152,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'معرف المشروع مطلوب' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 });
-    }
-
     const project = await prisma.project.findFirst({
-      where: { id, userId: user.id },
+      where: { id, userId },
     });
 
     if (!project) {
