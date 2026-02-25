@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/fabric": "^5.3.11",
     "@types/geoip-lite": "^1.4.2",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
