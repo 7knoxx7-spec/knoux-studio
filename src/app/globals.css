@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 30 50% 98%;
+    --foreground: 20 40% 20%;
+    --primary: 45 80% 50%;
+    --primary-foreground: 20 40% 10%;
+    --secondary: 30 40% 70%;
+    --secondary-foreground: 20 40% 20%;
+    --card: 30 40% 96%;
+    --card-foreground: 20 40% 20%;
+    --popover: 30 40% 96%;
+    --popover-foreground: 20 40% 20%;
+    --muted: 30 30% 90%;
+    --muted-foreground: 20 30% 40%;
+    --accent: 45 70% 60%;
+    --accent-foreground: 20 40% 10%;
+    --destructive: 0 80% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 30% 80%;
+    --input: 30 30% 80%;
+    --ring: 45 80% 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 20 40% 10%;
+    --foreground: 30 30% 90%;
+    --primary: 45 80% 50%;
+    --primary-foreground: 20 40% 10%;
+    --secondary: 30 30% 30%;
+    --secondary-foreground: 30 30% 90%;
+    --card: 20 40% 12%;
+    --card-foreground: 30 30% 90%;
+    --popover: 20 40% 12%;
+    --popover-foreground: 30 30% 90%;
+    --muted: 20 30% 20%;
+    --muted-foreground: 30 20% 60%;
+    --accent: 45 70% 50%;
+    --accent-foreground: 20 40% 10%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 20 30% 30%;
+    --input: 20 30% 30%;
+    --ring: 45 80% 50%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-family: 'Cairo', 'Inter', sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Cinzel', serif;
+  }
+}
+
+@layer components {
+  .text-gold {
+    @apply bg-gradient-to-r from-[#D4AF37] to-[#FDB931] bg-clip-text text-transparent;
+  }
+
+  .glow-gold {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  @keyframes glow {
+    0%,
+    100% {
+      text-shadow: 0 0 5px #d4af37, 0 0 10px #d4af37;
+    }
+    50% {
+      text-shadow: 0 0 20px #d4af37, 0 0 30px #fdb931;
+    }
+  }
+
+  .wood-bg {
+    background: linear-gradient(135deg, #2c1810 0%, #5d3e1f 50%, #8b5a2b 100%);
+    position: relative;
+  }
+
+  .wood-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+    pointer-events: none;
+  }
+
+  .glass-card {
+    @apply rounded-2xl border border-[#D4AF37]/20 bg-white/10 shadow-xl backdrop-blur-md;
+  }
+
+  .btn-gold {
+    @apply bg-gradient-to-r from-[#D4AF37] to-[#FDB931] font-semibold text-[#2c1810] shadow-lg transition-all duration-300 hover:from-[#FDB931] hover:to-[#D4AF37] hover:shadow-[#D4AF37]/50 disabled:opacity-50;
+  }
+
+  .btn-outline-gold {
+    @apply border border-[#D4AF37]/30 text-[#D4AF37] transition-all duration-300 hover:bg-[#D4AF37]/10 disabled:opacity-50;
+  }
+
+  .icon-gold {
+    @apply text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.5)];
+  }
+
+  .badge-gold {
+    @apply rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/20 px-3 py-1 text-xs text-[#D4AF37];
+  }
+
+  .badge-green {
+    @apply rounded-full border border-green-500/30 bg-green-500/20 px-3 py-1 text-xs text-green-500;
+  }
+
+  .badge-red {
+    @apply rounded-full border border-red-500/30 bg-red-500/20 px-3 py-1 text-xs text-red-500;
+  }
+
+  .tooltip {
+    @apply pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-black/90 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100;
+  }
+
+  .online-indicator {
+    @apply absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#2c1810];
+  }
+
+  .online {
+    @apply bg-green-500;
+  }
+
+  .offline {
+    @apply bg-gray-500;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #d4af37, #fdb931);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #fdb931, #d4af37);
+  }
+}
